@@ -3,14 +3,48 @@ name: Publish to pub.dev
 on:
   push:
     branches: [ "main" ]
+    # Uncomment the following if you want to trigger the workflow on tag push as well
     # tags:
     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
   publish:
-    permissions:
-      id-token: write # Required for authentication using OIDC
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.6' # Specify your Flutter version here
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Add other steps as necessary (formatting, testing, building, etc.)
+
+      - name: Publish to pub.dev
+        run: flutter pub publish --force # Replace with '--force' to actually publish
+        
+
+
+
+
+# name: Publish to pub.dev
+
+# on:
+#   push:
+#     branches: [ "main" ]
+#     # tags:
+#     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+# jobs:
+#   publish:
+#     permissions:
+#       id-token: write # Required for authentication using OIDC
+#     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
 
 # name: Dart publish
 
