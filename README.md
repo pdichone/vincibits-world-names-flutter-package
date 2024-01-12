@@ -52,3 +52,4 @@ class MyApp extends StatelessWidget {
 
 ## Additional information
 I will be adding more names as time progresses.  If you want to help with this project, make sure to contact me and we'll go from there!
+Check out the published [version here](https://pub.dev/packages/world_names/install).
