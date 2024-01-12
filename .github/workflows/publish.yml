@@ -3,12 +3,39 @@ name: Publish to pub.dev
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - 'v[0-9]+.[0-9]+.[0-9]+*'  # This triggers the workflow on push of tags like v1.0.0, v1.0.1, etc.
 
 jobs:
   publish:
-    permissions:
-      id-token: write # Required for authentication using OIDC
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
-    # with:
-    #   working-directory: path/to/package/within/repository
+    runs-on: ubuntu-latest  # Specifies the runner environment
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3  # Checks-out your repository under $GITHUB_WORKSPACE
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1  # Sets up Dart SDK
+
+      - name: Install dependencies
+        run: dart pub get  # Install package dependencies
+
+      - name: Publish to pub.dev
+        run: dart pub publish --force  # Replace with 'dart pub publish --force' to actually publish
+        env:
+          PUB_ACCESS_TOKEN: ${{ secrets.PUB_DEV_ACCESS_TOKEN }}  # Ensure you have this secret set in your repository settings
+
+
+# name: Publish to pub.dev
+
+# on:
+#   push:
+#     tags:
+#       - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+# jobs:
+#   publish:
+#     permissions:
+#       id-token: write # Required for authentication using OIDC
+#     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+#     # with:
+#     #   working-directory: path/to/package/within/repository
