@@ -1,3 +1,3 @@
-## 0.0.3
+## 0.0.4
 
-* Added some specific platforms this package supports
+* Added some github actions for development flow
