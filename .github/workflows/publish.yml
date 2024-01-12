@@ -24,8 +24,8 @@ jobs:
         run: flutter pub get
 
       # Add other steps as necessary (formatting, testing, building, etc.)
-      # - name: Add pub.dev token
-      #   run: echo ${{ secrets.PUB_ACCESS_TOKEN }} | dart pub token add pub.dev --token
+      - name: Add pub.dev token
+        run: echo ${{ secrets.PUB_ACCESS_TOKEN }} 
 
       - name: Publish to pub.dev
         run: flutter pub publish --dry-run # Replace with '--force' to actually publish
