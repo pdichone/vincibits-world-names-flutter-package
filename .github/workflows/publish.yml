@@ -1,4 +1,4 @@
-name: Publish Flutter Package to pub.dev
+name: Publish to pub.dev
 
 on:
   push:
