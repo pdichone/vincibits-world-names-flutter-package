@@ -1,36 +1,175 @@
-name: Publish to pub.dev
-
 on:
-  push:
-    branches: [ "main" ]
-    # Uncomment the following if you want to trigger the workflow on tag push as well
-    # tags:
-    #   - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_call:
+    inputs:
+      flutter:
+        type: boolean
+        required: false
+        default: false
+        description: Specifies, whether the package is a dart or a flutter package.
+      dartSdkVersion:
+        type: string
+        required: false
+        default: stable
+        description: The Dart-SDK version. Passed as "sdk" to "dart-lang/setup-dart".
+      flutterSdkChannel:
+        type: string
+        required: false
+        default: stable
+        description: The Flutter-SDK channel. Passed as "channel" to "subosito/flutter-action".
+      javaJdkVersion:
+        type: number
+        required: false
+        default: 11
+        description: The Java-SDK version (mayor only). Passed as "java-version" to "actions/setup-java".
+      environment:
+        type: string
+        required: true
+        description: The publishing environment for pub.dev.
+      tagPrefix:
+        type: string
+        required: false
+        default: v
+        description: The prefix of git tags. The tag is the prefix, followed by the package version.
+      workingDirectory:
+        type: string
+        required: false
+        default: .
+        description: The root directory of the dart package to build and test.
+      buildRunner:
+        type: boolean
+        required: false
+        default: false
+        description: Specify whether build_runner is used in the project (defaults to false).
+      buildRunnerArgs:
+        type: string
+        required: false
+        description: Optional additional arguments to be passed to the build runner.
+      prePublish:
+        type: string
+        required: false
+        description: A command to be run before publishing the package
+      extraArtifacts:
+        type: string
+        required: false
+        description: |
+          A JSON-Matrix a artifact download configuration, if needed. Can be used to
+          download artifacts before publishing the package. Can be combined with
+          `prePublish` to process the downloaded artifacts.
 
+          Example:
+          {
+            "name": "test-artifact",
+            "path": "path/to/artifact-dir"
+          }
 jobs:
   publish:
+    name: Publish to pub.dev
+    if: startsWith(github.ref, format('refs/tags/{0}', inputs.tagPrefix))
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup Flutter
+      - name: Install Dart-SDK (${{ inputs.dartSdkVersion }})
+        if: '!inputs.flutter'
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ inputs.dartSdkVersion }}
+      - name: Install Flutter-SDK (${{ inputs.flutterSdkChannel }})
+        if: inputs.flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.6' # Specify your Flutter version here
+          channel: ${{ inputs.flutterSdkChannel }}
+          cache: true
+      - name: Download flutter binary artifacts
+        if: inputs.flutter
+        run: flutter precache --universal
+      - name: Create publishing token (flutter)
+        if: inputs.flutter
+        run: |
+          set -eo pipefail
+          PUB_TOKEN=$(curl --retry 5 --retry-connrefused -sLS "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://pub.dev" -H "User-Agent: actions/oidc-client" -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" | jq -r '.value')
+          echo "PUB_TOKEN=${PUB_TOKEN}" >> $GITHUB_ENV
+          export PUB_TOKEN
+          flutter pub token add https://pub.dev --env-var PUB_TOKEN
+      - id: tools
+        name: Prepare build tools
+        run: |
+          if ${{ inputs.flutter }}; then
+            echo "pub=flutter pub" >> $GITHUB_OUTPUT
+            echo "pubRun=flutter pub run" >> $GITHUB_OUTPUT
+          else
+            echo "pub=dart pub" >> $GITHUB_OUTPUT
+            echo "pubRun=dart run" >> $GITHUB_OUTPUT
+          fi
+      - name: Install scoop
+        if: runner.os == 'Windows'
+        run: |
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+        shell: pwsh
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Remove pubspec_overrides.yaml
+        run: find . -type f -name "pubspec_overrides.yaml" -exec git rm -f {} \;
+        working-directory: ${{ inputs.workingDirectory }}
+        shell: bash
+      - name: Restore dart packages
+        run: ${{ steps.tools.outputs.pub }} get
+        working-directory: ${{ inputs.workingDirectory }}
+      - name: Create build files
+        if: inputs.buildRunner
+        run: ${{ steps.tools.outputs.pubRun }} build_runner build --release ${{ inputs.buildRunnerArgs }}
+        working-directory: ${{ inputs.workingDirectory }}
+      - name: Download additional artifacts
+        if: inputs.extraArtifacts != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ fromJSON(inputs.extraArtifacts)['name'] }}
+          path: ${{ fromJSON(inputs.extraArtifacts)['path'] }}
+      - name: Run pre publish script
+        if: inputs.prePublish != ''
+        run: ${{ inputs.prePublish }}
+        working-directory: ${{ inputs.workingDirectory }}
+      - name: Publish package
+        run: ${{ steps.tools.outputs.pub }} publish --force
+        working-directory: ${{ inputs.workingDirectory }}
 
-      - name: Install dependencies
-        run: flutter pub get
+# name: Publish to pub.dev
 
-      # Add other steps as necessary (formatting, testing, building, etc.)
-      - name: Add pub.dev token
-        run: echo ${{ secrets.PUB_ACCESS_TOKEN }} 
+# on:
+#   push:
+#     branches: [ "main" ]
+#     # Uncomment the following if you want to trigger the workflow on tag push as well
+#     # tags:
+#     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
 
-      - name: Publish to pub.dev
-        run: flutter pub publish --force # Replace with '--force' to actually publish
-        env:
-          PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
+# jobs:
+#   publish:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
+
+#       - name: Setup Flutter
+#         uses: subosito/flutter-action@v2
+#         with:
+#           flutter-version: '3.16.6' # Specify your Flutter version here
+
+#       - name: Install dependencies
+#         run: flutter pub get
+
+#       # Add other steps as necessary (formatting, testing, building, etc.)
+#       - name: Add pub.dev token
+#         run: echo ${{ secrets.PUB_ACCESS_TOKEN }} 
+
+#       - name: Publish to pub.dev
+#         run: flutter pub publish --force # Replace with '--force' to actually publish
+#         env:
+#           PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
 
 
 
