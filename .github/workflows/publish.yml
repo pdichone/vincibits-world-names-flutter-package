@@ -35,7 +35,8 @@ jobs:
 
       - name: Publish package
         run: |
-          echo ${{ secrets.PUB_ACCESS_TOKEN }} | flutter pub token add pub.dev --env-var=PUB_ACCESS_TOKEN
+          echo ${{ secrets.PUB_ACCESS_TOKEN }} | flutter pub token add https://pub.dev --env-var=PUB_ACCESS_TOKEN
+
 
           flutter pub publish --force
         env:
