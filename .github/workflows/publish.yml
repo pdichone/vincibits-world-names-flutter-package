@@ -2,236 +2,259 @@ name: Publish to pub.dev
 
 on:
   push:
-    branches:
-      - main
+    tags:
+    # must align with the tag-pattern configured on pub.dev, often just replace
+    #  with [0-9]+.[0-9]+.[0-9]+*
+    - 'v[0-9]+.[0-9]+.[0-9]+*' # tag-pattern on pub.dev: 'v'
+    # If you prefer tags like '1.2.3', without the 'v' prefix, then use:
+    # - '[0-9]+.[0-9]+.[0-9]+*' # tag-pattern on pub.dev: ''
+    # If your repository contains multiple packages consider a pattern like:
+    # - 'my_package_name-v[0-9]+.[0-9]+.[0-9]+*'
 
+# Publish using the reusable workflow from dart-lang.
 jobs:
   publish:
-    name: Publish to pub.dev
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Flutter SDK
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable # Or specify a different Flutter SDK channel
-          cache: true
-
-      - name: Download Flutter binary artifacts
-        run: flutter precache --universal
-
-      - name: Install dependencies
-        run: flutter pub get
-        working-directory: . # Or specify your Flutter project's directory
-
-      - name: Run tests
-        run: flutter test
-        working-directory: . # If you have tests, otherwise remove this step
-
-      # Optional: Other steps like linting, formatting, or building can be added here
-
-      - name: Publish package
-        run: |
-          echo ${{ secrets.PUB_ACCESS_TOKEN }} | flutter pub token add https://pub.dev --env-var=PUB_ACCESS_TOKEN
-
-
-          flutter pub publish --force
-        env:
-          PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
-        working-directory: . # Or specify your Flutter project's directory
+    permissions:
+      id-token: write # Required for authentication using OIDC
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    # with:
+    #   working-directory: path/to/package/within/repository
 
 
 # name: Publish to pub.dev
 
 # on:
 #   push:
-#     branches: [ "main" ]
-#     # Optionally, use tags to trigger the workflow:
-#     # tags:
-#     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
+#     branches:
+#       - main
 
 # jobs:
 #   publish:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v3
-
-#       # - name: Setup Dart SDK
-#       #   # if: ${{ !env.FLUTTER }}
-#       #   uses: dart-lang/setup-dart@v1
-#       #   with:
-#       #     sdk: 'stable' # Or use a specific version
-
-#       - name: Setup Flutter SDK
-#         # if: ${{ env.FLUTTER }}
-#         uses: subosito/flutter-action@v2
-#         with:
-#           channel: 'stable' # Or use a specific channel
-
-#       - name: Download Flutter binary artifacts
-#         # if: ${{ env.FLUTTER }}
-#         run: flutter precache --universal
-
-#       - name: Create publishing token (Flutter)
-#         # if: ${{ env.FLUTTER }}
-#         run: |
-#           set -eo pipefail
-#           PUB_TOKEN=$(curl --retry 5 --retry-connrefused -sLS "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://pub.dev" -H "User-Agent: actions/oidc-client" -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-#           echo "PUB_TOKEN=${PUB_TOKEN}" >> $GITHUB_ENV
-#           export PUB_TOKEN
-#           flutter pub token add https://pub.dev --env-var PUB_TOKEN
-#       - id: tools
-#         name: Prepare build tools
-#         run: |
-#               echo "pub=flutter pub" >> $GITHUB_OUTPUT
-#               echo "pubRun=flutter pub run" >> $GITHUB_OUTPUT
-            
-#               fi
-#       - name: Install dependencies
-#         run: flutter pub get
-
-#       # Add steps for formatting, analysis, and testing as needed
-
-#       - name: Publish to pub.dev
-#         run: dart pub publish --force
-#         env:
-#           PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
-
-
-
-# name: Publish to pub.dev
-
-# on:
-#   push:
-#     branches: [ "main" ]
-#     # Uncomment the following if you want to trigger the workflow on tag push as well
-#     # tags:
-#     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
-
-# jobs:
-#   publish:
+#     name: Publish to pub.dev
 #     runs-on: ubuntu-latest
 
 #     steps:
 #       - name: Checkout repository
 #         uses: actions/checkout@v4
 
-#       - name: Setup Flutter
+#       - name: Install Flutter SDK
 #         uses: subosito/flutter-action@v2
 #         with:
-#           flutter-version: '3.16.6' # Specify your Flutter version here
+#           channel: stable # Or specify a different Flutter SDK channel
+#           cache: true
+
+#       - name: Download Flutter binary artifacts
+#         run: flutter precache --universal
 
 #       - name: Install dependencies
 #         run: flutter pub get
-
-#       # Add other steps as necessary (formatting, testing, building, etc.)
-#       - name: Add pub.dev token
-#         run: echo ${{ secrets.PUB_ACCESS_TOKEN }} 
-
-#       - name: Publish to pub.dev
-#         run: flutter pub publish --force # Replace with '--force' to actually publish
-#         env:
-#           PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
-
-
-
-
-# name: Publish to pub.dev
-
-# on:
-#   push:
-#     branches: [ "main" ]
-#     # tags:
-#     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
-
-# jobs:
-#   publish:
-#     permissions:
-#       id-token: write # Required for authentication using OIDC
-#     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
-
-# name: Dart publish
-
-# on:
-#   push:
-#     branches: [ "main" ]
-#   pull_request:
-#     branches: [ "main" ]
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - uses: actions/checkout@v3
-
-#       - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
-
-#       - name: Install dependencies
-#         run: flutter pub get
-
-#       # - name: Verify formatting
-#       #   run: dart format --output=none --set-exit-if-changed .
-
-#       - name: Analyze project source
-#         run: dart analyze
+#         working-directory: . # Or specify your Flutter project's directory
 
 #       - name: Run tests
-#         run: dart test
+#         run: flutter test
+#         working-directory: . # If you have tests, otherwise remove this step
 
-#       # This step will publish the package if tests pass and the push is on 'main' branch
-#       - name: Publish to Pub.dev
-#         if: success() && github.ref == 'refs/heads/main'
-#         run: dart pub publish --force
+#       # Optional: Other steps like linting, formatting, or building can be added here
+
+#       - name: Publish package
+#         run: |
+#           echo ${{ secrets.PUB_ACCESS_TOKEN }} | flutter pub token add https://pub.dev --env-var=PUB_ACCESS_TOKEN
+
+
+#           flutter pub publish --force
 #         env:
-#           PUB_ACCESS_TOKEN: ${{ secrets.PUB_DEV_ACCESS_TOKEN }}
+#           PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
+#         working-directory: . # Or specify your Flutter project's directory
+
+
+# # name: Publish to pub.dev
+
+# # on:
+# #   push:
+# #     branches: [ "main" ]
+# #     # Optionally, use tags to trigger the workflow:
+# #     # tags:
+# #     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+# # jobs:
+# #   publish:
+# #     runs-on: ubuntu-latest
+
+# #     steps:
+# #       - name: Checkout repository
+# #         uses: actions/checkout@v3
+
+# #       # - name: Setup Dart SDK
+# #       #   # if: ${{ !env.FLUTTER }}
+# #       #   uses: dart-lang/setup-dart@v1
+# #       #   with:
+# #       #     sdk: 'stable' # Or use a specific version
+
+# #       - name: Setup Flutter SDK
+# #         # if: ${{ env.FLUTTER }}
+# #         uses: subosito/flutter-action@v2
+# #         with:
+# #           channel: 'stable' # Or use a specific channel
+
+# #       - name: Download Flutter binary artifacts
+# #         # if: ${{ env.FLUTTER }}
+# #         run: flutter precache --universal
+
+# #       - name: Create publishing token (Flutter)
+# #         # if: ${{ env.FLUTTER }}
+# #         run: |
+# #           set -eo pipefail
+# #           PUB_TOKEN=$(curl --retry 5 --retry-connrefused -sLS "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://pub.dev" -H "User-Agent: actions/oidc-client" -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+# #           echo "PUB_TOKEN=${PUB_TOKEN}" >> $GITHUB_ENV
+# #           export PUB_TOKEN
+# #           flutter pub token add https://pub.dev --env-var PUB_TOKEN
+# #       - id: tools
+# #         name: Prepare build tools
+# #         run: |
+# #               echo "pub=flutter pub" >> $GITHUB_OUTPUT
+# #               echo "pubRun=flutter pub run" >> $GITHUB_OUTPUT
+            
+# #               fi
+# #       - name: Install dependencies
+# #         run: flutter pub get
+
+# #       # Add steps for formatting, analysis, and testing as needed
+
+# #       - name: Publish to pub.dev
+# #         run: dart pub publish --force
+# #         env:
+# #           PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
+
+
+
+# # name: Publish to pub.dev
+
+# # on:
+# #   push:
+# #     branches: [ "main" ]
+# #     # Uncomment the following if you want to trigger the workflow on tag push as well
+# #     # tags:
+# #     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+# # jobs:
+# #   publish:
+# #     runs-on: ubuntu-latest
+
+# #     steps:
+# #       - name: Checkout repository
+# #         uses: actions/checkout@v4
+
+# #       - name: Setup Flutter
+# #         uses: subosito/flutter-action@v2
+# #         with:
+# #           flutter-version: '3.16.6' # Specify your Flutter version here
+
+# #       - name: Install dependencies
+# #         run: flutter pub get
+
+# #       # Add other steps as necessary (formatting, testing, building, etc.)
+# #       - name: Add pub.dev token
+# #         run: echo ${{ secrets.PUB_ACCESS_TOKEN }} 
+
+# #       - name: Publish to pub.dev
+# #         run: flutter pub publish --force # Replace with '--force' to actually publish
+# #         env:
+# #           PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
 
 
 
 
-# name: Publish to pub.dev
+# # name: Publish to pub.dev
 
-# on:
-#   push:
-#     tags:
-#       - 'v[0-9]+.[0-9]+.[0-9]+*'  # This triggers the workflow on push of tags like v1.0.0, v1.0.1, etc.
+# # on:
+# #   push:
+# #     branches: [ "main" ]
+# #     # tags:
+# #     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
 
-# jobs:
-#   publish:
-#     runs-on: ubuntu-latest  # Specifies the runner environment
+# # jobs:
+# #   publish:
+# #     permissions:
+# #       id-token: write # Required for authentication using OIDC
+# #     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v3  # Checks-out your repository under $GITHUB_WORKSPACE
+# # name: Dart publish
 
-#       - name: Setup Dart
-#         uses: dart-lang/setup-dart@v1  # Sets up Dart SDK
+# # on:
+# #   push:
+# #     branches: [ "main" ]
+# #   pull_request:
+# #     branches: [ "main" ]
 
-#       - name: Install dependencies
-#         run: dart pub get  # Install package dependencies
+# # jobs:
+# #   build:
+# #     runs-on: ubuntu-latest
 
-#       - name: Publish to pub.dev
-#         run: dart pub publish --force  # Replace with 'dart pub publish --force' to actually publish
-#         env:
-#           PUB_ACCESS_TOKEN: ${{ secrets.PUB_DEV_ACCESS_TOKEN }}  # Ensure you have this secret set in your repository settings
+# #     steps:
+# #       - uses: actions/checkout@v3
+
+# #       - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+
+# #       - name: Install dependencies
+# #         run: flutter pub get
+
+# #       # - name: Verify formatting
+# #       #   run: dart format --output=none --set-exit-if-changed .
+
+# #       - name: Analyze project source
+# #         run: dart analyze
+
+# #       - name: Run tests
+# #         run: dart test
+
+# #       # This step will publish the package if tests pass and the push is on 'main' branch
+# #       - name: Publish to Pub.dev
+# #         if: success() && github.ref == 'refs/heads/main'
+# #         run: dart pub publish --force
+# #         env:
+# #           PUB_ACCESS_TOKEN: ${{ secrets.PUB_DEV_ACCESS_TOKEN }}
 
 
-# name: Publish to pub.dev
 
-# on:
-#   push:
-#     tags:
-#       - 'v[0-9]+.[0-9]+.[0-9]+*'
 
-# jobs:
-#   publish:
-#     permissions:
-#       id-token: write # Required for authentication using OIDC
-#     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
-#     # with:
-#     #   working-directory: path/to/package/within/repository
+# # name: Publish to pub.dev
+
+# # on:
+# #   push:
+# #     tags:
+# #       - 'v[0-9]+.[0-9]+.[0-9]+*'  # This triggers the workflow on push of tags like v1.0.0, v1.0.1, etc.
+
+# # jobs:
+# #   publish:
+# #     runs-on: ubuntu-latest  # Specifies the runner environment
+
+# #     steps:
+# #       - name: Checkout repository
+# #         uses: actions/checkout@v3  # Checks-out your repository under $GITHUB_WORKSPACE
+
+# #       - name: Setup Dart
+# #         uses: dart-lang/setup-dart@v1  # Sets up Dart SDK
+
+# #       - name: Install dependencies
+# #         run: dart pub get  # Install package dependencies
+
+# #       - name: Publish to pub.dev
+# #         run: dart pub publish --force  # Replace with 'dart pub publish --force' to actually publish
+# #         env:
+# #           PUB_ACCESS_TOKEN: ${{ secrets.PUB_DEV_ACCESS_TOKEN }}  # Ensure you have this secret set in your repository settings
+
+
+# # name: Publish to pub.dev
+
+# # on:
+# #   push:
+# #     tags:
+# #       - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+# # jobs:
+# #   publish:
+# #     permissions:
+# #       id-token: write # Required for authentication using OIDC
+# #     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+# #     # with:
+# #     #   working-directory: path/to/package/within/repository
