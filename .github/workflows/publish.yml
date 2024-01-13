@@ -39,7 +39,13 @@ jobs:
           echo "PUB_TOKEN=${PUB_TOKEN}" >> $GITHUB_ENV
           export PUB_TOKEN
           flutter pub token add https://pub.dev --env-var PUB_TOKEN
-
+      - id: tools
+        name: Prepare build tools
+        run: |
+              echo "pub=flutter pub" >> $GITHUB_OUTPUT
+              echo "pubRun=flutter pub run" >> $GITHUB_OUTPUT
+            
+              fi
       - name: Install dependencies
         run: flutter pub get
 
