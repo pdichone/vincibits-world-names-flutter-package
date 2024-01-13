@@ -1,60 +1,104 @@
-name: Publish to pub.dev
+name: Publish Flutter Package to pub.dev
 
 on:
   push:
-    branches: [ "main" ]
-    # Optionally, use tags to trigger the workflow:
-    # tags:
-    #   - 'v[0-9]+.[0-9]+.[0-9]+*'
+    branches:
+      - main
 
 jobs:
   publish:
+    name: Publish to pub.dev
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # - name: Setup Dart SDK
-      #   # if: ${{ !env.FLUTTER }}
-      #   uses: dart-lang/setup-dart@v1
-      #   with:
-      #     sdk: 'stable' # Or use a specific version
-
-      - name: Setup Flutter SDK
-        # if: ${{ env.FLUTTER }}
+      - name: Install Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' # Or use a specific channel
+          channel: stable # Or specify a different Flutter SDK channel
+          cache: true
 
       - name: Download Flutter binary artifacts
-        # if: ${{ env.FLUTTER }}
         run: flutter precache --universal
 
-      - name: Create publishing token (Flutter)
-        # if: ${{ env.FLUTTER }}
-        run: |
-          set -eo pipefail
-          PUB_TOKEN=$(curl --retry 5 --retry-connrefused -sLS "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://pub.dev" -H "User-Agent: actions/oidc-client" -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-          echo "PUB_TOKEN=${PUB_TOKEN}" >> $GITHUB_ENV
-          export PUB_TOKEN
-          flutter pub token add https://pub.dev --env-var PUB_TOKEN
-      - id: tools
-        name: Prepare build tools
-        run: |
-              echo "pub=flutter pub" >> $GITHUB_OUTPUT
-              echo "pubRun=flutter pub run" >> $GITHUB_OUTPUT
-            
-              fi
       - name: Install dependencies
         run: flutter pub get
+        working-directory: . # Or specify your Flutter project's directory
 
-      # Add steps for formatting, analysis, and testing as needed
+      - name: Run tests
+        run: flutter test
+        working-directory: . # If you have tests, otherwise remove this step
 
-      - name: Publish to pub.dev
-        run: dart pub publish --force
+      # Optional: Other steps like linting, formatting, or building can be added here
+
+      - name: Publish package
+        run: |
+          echo ${{ secrets.PUB_ACCESS_TOKEN }} | flutter pub token add pub.dev --env-var
+          flutter pub publish --force
         env:
           PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
+        working-directory: . # Or specify your Flutter project's directory
+
+
+# name: Publish to pub.dev
+
+# on:
+#   push:
+#     branches: [ "main" ]
+#     # Optionally, use tags to trigger the workflow:
+#     # tags:
+#     #   - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+# jobs:
+#   publish:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
+
+#       # - name: Setup Dart SDK
+#       #   # if: ${{ !env.FLUTTER }}
+#       #   uses: dart-lang/setup-dart@v1
+#       #   with:
+#       #     sdk: 'stable' # Or use a specific version
+
+#       - name: Setup Flutter SDK
+#         # if: ${{ env.FLUTTER }}
+#         uses: subosito/flutter-action@v2
+#         with:
+#           channel: 'stable' # Or use a specific channel
+
+#       - name: Download Flutter binary artifacts
+#         # if: ${{ env.FLUTTER }}
+#         run: flutter precache --universal
+
+#       - name: Create publishing token (Flutter)
+#         # if: ${{ env.FLUTTER }}
+#         run: |
+#           set -eo pipefail
+#           PUB_TOKEN=$(curl --retry 5 --retry-connrefused -sLS "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://pub.dev" -H "User-Agent: actions/oidc-client" -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+#           echo "PUB_TOKEN=${PUB_TOKEN}" >> $GITHUB_ENV
+#           export PUB_TOKEN
+#           flutter pub token add https://pub.dev --env-var PUB_TOKEN
+#       - id: tools
+#         name: Prepare build tools
+#         run: |
+#               echo "pub=flutter pub" >> $GITHUB_OUTPUT
+#               echo "pubRun=flutter pub run" >> $GITHUB_OUTPUT
+            
+#               fi
+#       - name: Install dependencies
+#         run: flutter pub get
+
+#       # Add steps for formatting, analysis, and testing as needed
+
+#       - name: Publish to pub.dev
+#         run: dart pub publish --force
+#         env:
+#           PUB_ACCESS_TOKEN: ${{ secrets.PUB_ACCESS_TOKEN }}
 
 
 
