@@ -1,6 +1,6 @@
 name: world_names
 description: "A new Flutter package that generates random most popular names in the world"
-version: 0.0.4
+version: 0.0.5
 homepage: "https://www.buildappswithpaulo.com"
 
 environment:
